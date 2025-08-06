@@ -74,35 +74,6 @@ const FactChecker = () => {
     }
   };
 
-  const factCheck = async (query: string): Promise<FactCheckResult> => {
-    try {
-      const response = await fetch('/functions/v1/fact-check', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ query })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fact-check query');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Fact-check error:', error);
-      // Fallback for demo purposes
-      return {
-        verdict: "INSUFFICIENT_DATA",
-        confidence: 0,
-        summary: "Unable to connect to fact-checking service. Please check your API key configuration and try again.",
-        sources: [],
-        lastUpdated: new Date().toISOString()
-      };
-    }
-  };
-
   // Check for saved API key on component mount
   useEffect(() => {
     const savedKey = localStorage.getItem('webz_api_key');
@@ -113,41 +84,36 @@ const FactChecker = () => {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim()) {
-      toast({
-        title: "Please enter a claim",
-        description: "Enter something you'd like to fact-check",
-        variant: "destructive"
-      });
-      return;
-    }
+      e.preventDefault();
+      if (!query.trim()) {
+        toast({
+          title: "Please enter a claim",
+          description: "Enter something you'd like to fact-check",
+          variant: "destructive"
+        });
+        return;
+      }
 
-    if (!isApiKeySet) {
-      toast({
-        title: "API Key Required",
-        description: "Please configure your Webz.io API key first.",
-        variant: "destructive"
-      });
-      return;
-    }
+      setIsLoading(true);
+      setResult(null);
 
-    setIsLoading(true);
-    setResult(null);
-
-    try {
-      const factCheckResult = await factCheck(query);
-      setResult(factCheckResult);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fact-check your query. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      // Simulate an API call with a delay
+      setTimeout(() => {
+        // Placeholder data
+        const fakeResult: FactCheckResult = {
+          verdict: "TRUE",
+          confidence: 85,
+          summary: "This is a placeholder summary for the fact-check result.",
+          sources: [
+            { name: "Source A", url: "#", credibilityScore: 8, supportsVerdict: true },
+            { name: "Source B", url: "#", credibilityScore: 7, supportsVerdict: true },
+          ],
+          lastUpdated: new Date().toISOString(),
+        };
+        setResult(fakeResult);
+        setIsLoading(false);
+      }, 1500); // 1.5 second delay
+    };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
