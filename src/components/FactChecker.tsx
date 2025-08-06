@@ -1,8 +1,10 @@
-import { useState } from "react";
-import { Search, Shield, CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Shield, CheckCircle, XCircle, AlertTriangle, Info, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ConfidenceIndicator } from "./ConfidenceIndicator";
 import { LoadingSpinner } from "./LoadingSpinner";
@@ -13,9 +15,9 @@ export interface FactCheckResult {
   summary: string;
   sources: Array<{
     name: string;
-    description: string;
-    url?: string;
-    credibility: number;
+    url: string;
+    credibilityScore: number;
+    supportsVerdict: boolean;
   }>;
   lastUpdated: string;
 }
@@ -24,6 +26,8 @@ const FactChecker = () => {
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<FactCheckResult | null>(null);
+  const [apiKey, setApiKey] = useState("");
+  const [isApiKeySet, setIsApiKeySet] = useState(false);
   const { toast } = useToast();
 
   const getVerdictIcon = (verdict: string) => {
@@ -52,67 +56,61 @@ const FactChecker = () => {
     }
   };
 
-  const mockFactCheck = async (query: string): Promise<FactCheckResult> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock responses for demonstration
-    const mockResponses = {
-      "earth is flat": {
-        verdict: "FALSE" as const,
-        confidence: 98,
-        summary: "Scientific consensus overwhelmingly supports that Earth is a sphere. This has been established through multiple lines of evidence including satellite imagery, physics, and centuries of observation.",
-        sources: [
-          { name: "NASA", description: "Official space agency documentation with satellite imagery", credibility: 10 },
-          { name: "National Geographic", description: "Educational content on Earth's spherical shape", credibility: 9 },
-          { name: "Scientific American", description: "Peer-reviewed articles on planetary science", credibility: 9 }
-        ]
-      },
-      "water boils at 100 degrees celsius": {
-        verdict: "TRUE" as const,
-        confidence: 99,
-        summary: "Water boils at 100°C (212°F) at sea level atmospheric pressure. This is a well-established scientific fact used as a reference point in the Celsius temperature scale.",
-        sources: [
-          { name: "Physics Textbooks", description: "Standard physics education materials", credibility: 10 },
-          { name: "NIST", description: "National Institute of Standards and Technology reference", credibility: 10 },
-          { name: "Encyclopedia Britannica", description: "Educational reference on water properties", credibility: 9 }
-        ]
-      },
-      "vaccines cause autism": {
-        verdict: "FALSE" as const,
-        confidence: 96,
-        summary: "Extensive scientific research involving millions of children has found no link between vaccines and autism. The original study claiming this link was retracted due to fraud.",
-        sources: [
-          { name: "CDC", description: "Centers for Disease Control comprehensive studies", credibility: 10 },
-          { name: "WHO", description: "World Health Organization vaccine safety data", credibility: 10 },
-          { name: "The Lancet", description: "Retraction of fraudulent study and subsequent research", credibility: 9 }
-        ]
+  const saveApiKey = async (key: string) => {
+    try {
+      localStorage.setItem('webz_api_key', key);
+      setApiKey(key);
+      setIsApiKeySet(true);
+      toast({
+        title: "API Key Saved",
+        description: "Your Webz.io API key has been saved securely.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save API key. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const factCheck = async (query: string): Promise<FactCheckResult> => {
+    try {
+      const response = await fetch('/functions/v1/fact-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ query })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fact-check query');
       }
-    };
 
-    const lowercaseQuery = query.toLowerCase();
-    const match = Object.keys(mockResponses).find(key => 
-      lowercaseQuery.includes(key)
-    );
-
-    if (match) {
+      return await response.json();
+    } catch (error) {
+      console.error('Fact-check error:', error);
+      // Fallback for demo purposes
       return {
-        ...mockResponses[match as keyof typeof mockResponses],
+        verdict: "INSUFFICIENT_DATA",
+        confidence: 0,
+        summary: "Unable to connect to fact-checking service. Please check your API key configuration and try again.",
+        sources: [],
         lastUpdated: new Date().toISOString()
       };
     }
-
-    // Default response for unknown queries
-    return {
-      verdict: "INSUFFICIENT_DATA",
-      confidence: 25,
-      summary: "Unable to find sufficient reliable sources to verify this claim. Consider checking with established fact-checking organizations or primary sources.",
-      sources: [
-        { name: "Search Results", description: "Limited relevant information found", credibility: 3 }
-      ],
-      lastUpdated: new Date().toISOString()
-    };
   };
+
+  // Check for saved API key on component mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('webz_api_key');
+    if (savedKey) {
+      setApiKey(savedKey);
+      setIsApiKeySet(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,11 +123,20 @@ const FactChecker = () => {
       return;
     }
 
+    if (!isApiKeySet) {
+      toast({
+        title: "API Key Required",
+        description: "Please configure your Webz.io API key first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     setResult(null);
 
     try {
-      const factCheckResult = await mockFactCheck(query);
+      const factCheckResult = await factCheck(query);
       setResult(factCheckResult);
     } catch (error) {
       toast({
@@ -146,7 +153,7 @@ const FactChecker = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 relative">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Shield className="h-12 w-12 text-primary" />
             <h1 className="text-4xl font-bold text-foreground">FactGuard</h1>
@@ -154,6 +161,44 @@ const FactChecker = () => {
           <p className="text-xl text-muted-foreground font-medium">
             Don't believe everything you see
           </p>
+          
+          {/* API Settings Button */}
+          <div className="absolute top-0 right-0">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Settings className="w-4 h-4" />
+                  {isApiKeySet ? "API Configured" : "Setup API"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Configure Webz.io API</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="api-key">Webz.io API Key</Label>
+                    <Input
+                      id="api-key"
+                      type="password"
+                      placeholder="Enter your Webz.io API key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                    />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Get your free API key from{" "}
+                      <a href="https://webz.io" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        webz.io
+                      </a>
+                    </p>
+                  </div>
+                  <Button onClick={() => saveApiKey(apiKey)} disabled={!apiKey}>
+                    Save API Key
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Search Form */}
@@ -221,20 +266,27 @@ const FactChecker = () => {
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">Sources Used</h3>
                 <div className="space-y-3">
-                  {result.sources.map((source, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-                      <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
-                      <div className="flex-grow">
-                        <h4 className="font-medium text-foreground">{source.name}</h4>
-                        <p className="text-sm text-muted-foreground">{source.description}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                            Credibility: {source.credibility}/10
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                   {result.sources.map((source, index) => (
+                     <div key={index} className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                       <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-2"></div>
+                       <div className="flex-grow">
+                         <h4 className="font-medium text-foreground">{source.name}</h4>
+                         {source.url && (
+                           <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                             View Source
+                           </a>
+                         )}
+                         <div className="flex items-center gap-2 mt-1">
+                           <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                             Credibility: {source.credibilityScore}/10
+                           </span>
+                           <span className={`text-xs px-2 py-1 rounded ${source.supportsVerdict ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                             {source.supportsVerdict ? 'Supports' : 'Contradicts'}
+                           </span>
+                         </div>
+                       </div>
+                     </div>
+                   ))}
                 </div>
               </div>
 
