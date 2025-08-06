@@ -2,41 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Fact-Checking App Design System - Professional, trustworthy design */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    /* Core backgrounds */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+    
+    /* Card and surface colors */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 215 25% 15%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 15%;
+    
+    /* Trust-building primary colors - Professional blue */
+    --primary: 213 84% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 213 84% 40%;
+    
+    /* Secondary colors for neutral elements */
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 215 25% 15%;
+    
+    /* Muted colors for subtle elements */
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 45%;
+    
+    /* Accent for highlights */
+    --accent: 213 84% 50%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Status colors for fact-checking results */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 94%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 84% 95%;
+    
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --info-light: 199 89% 95%;
+    
+    /* Border and input styling */
+    --border: 215 20% 85%;
+    --input: 215 20% 90%;
+    --ring: 213 84% 45%;
+    
+    /* Interactive elements */
+    --confidence-bg: 215 15% 97%;
+    --confidence-fill: 213 84% 45%;
+    
+    /* Gradients for visual appeal */
+    --gradient-hero: linear-gradient(135deg, hsl(213 84% 45%), hsl(199 89% 48%));
+    --gradient-subtle: linear-gradient(180deg, hsl(210 20% 98%), hsl(210 15% 96%));
+    
+    /* Shadows for depth */
+    --shadow-card: 0 4px 6px -1px hsl(215 25% 15% / 0.08), 0 2px 4px -1px hsl(215 25% 15% / 0.06);
+    --shadow-elevated: 0 10px 25px -3px hsl(215 25% 15% / 0.1), 0 4px 6px -2px hsl(215 25% 15% / 0.05);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease-out;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
